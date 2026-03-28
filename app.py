@@ -1,20 +1,36 @@
 import streamlit as st
-import requests
+import nltk
+from utils import extract_resume_text, clean_text, extract_skills, get_match_score, missing_skills
 
-st.title("Smart Resume Analyzer 🚀")
+nltk.download('punkt')
 
-API_URL = "https://resume-analyzer-api.onrender.com/analyze"
+st.title("📄 Smart Resume Analyzer")
 
-file = st.file_uploader("Upload Resume PDF")
+uploaded_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+job_description = st.text_area("Enter Job Description")
 
-if file:
-    files = {"file": file.getvalue()}
-    
-    response = requests.post(API_URL, files={"file": file})
-    
-    if response.status_code == 200:
-        result = response.json()
-        st.success("Analysis Done ✅")
-        st.write("Category:", result["category"])
+if uploaded_file and job_description:
+
+    # Process resume
+    resume_text = extract_resume_text(uploaded_file)
+
+    cleaned_resume = clean_text(resume_text)
+    cleaned_job = clean_text(job_description)
+
+    # Analysis
+    skills = extract_skills(cleaned_resume)
+    score = get_match_score(cleaned_resume, cleaned_job)
+    missing = missing_skills(skills)
+
+    # Output
+    st.subheader("🔍 Analysis Result")
+    st.write("**Skills Found:**", skills)
+    st.write("**Match Score:**", str(score) + "%")
+
+    if score < 50:
+        st.warning("⚠️ Improve your resume")
     else:
-        st.error("Error connecting to API")
+        st.success("✅ Good match!")
+
+    st.subheader("📉 Missing Skills")
+    st.write(missing)
